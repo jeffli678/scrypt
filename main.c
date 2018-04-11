@@ -149,20 +149,20 @@ main(int argc, char *argv[])
 		infile = stdin;
 	}
 
-	/* If we have an output file, open it. */
-	if (argc > 1) {
-		if ((outfile = fopen(argv[1], "wb")) == NULL) {
-			warnp("Cannot open output file: %s", argv[1]);
-			goto err0;
-		}
-	} else {
-		outfile = stdout;
-	}
-
 	/* Prompt for a password. */
 	if (readpass(&passwd, "Please enter passphrase",
 	    (dec || !devtty) ? NULL : "Please confirm passphrase", devtty))
 		goto err0;
+
+	/* If we have an output file, open it. */
+	if (argc > 1) {
+		if ((outfile = fopen(argv[1], "wb")) == NULL) {
+			warnp("Cannot open output file: %s", argv[1]);
+			goto err1;
+		}
+	} else {
+		outfile = stdout;
+	}
 
 	/* Encrypt or decrypt. */
 	if (dec)
@@ -233,6 +233,14 @@ main(int argc, char *argv[])
 	/* Success! */
 	return (0);
 
+err1:
+	/* Zero and free the password. */
+	insecure_memzero(passwd, strlen(passwd));
+	free(passwd);
+
+	/* Close any file we opened. */
+	if (infile != stdin)
+		fclose(infile);
 err0:
 	/* Failure! */
 	exit(1);
